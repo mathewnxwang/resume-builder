@@ -11,12 +11,12 @@ openai.api_key = os.environ.get('OPENAI_API_KEY')
 template = '''Emulate the writing style of the following resume bullet points:
 {few_shot_examples}
 =====
-Write resume bullet points that summarize the following experience: {exp_description}
+Write {bullet_points_n} resume bullet points that summarize the following experience: {exp_description}
 ====
 Resume bullet points for the given experience:'''
 
 prompt_template = PromptTemplate(
-    input_variables=['exp_description', 'few_shot_examples'],
+    input_variables=['exp_description', 'bullet_points_n', 'few_shot_examples'],
     template=template
 )
 
@@ -27,25 +27,35 @@ call_llm = OpenAI()
 st.set_page_config(page_title='Resume Builder')
 st.header('Resume Builder')
 
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown('Don\'t know where to start on writing your resume? Try this tool to get started!')
+st.markdown('Don\'t know where to start on writing your resume? Try this tool to get started!')
 
 # with col2:
 #     st.image(image=r'C:\Users\mnw47\coding projects\resume_builder\resume_example.jpeg', width=500)
 
-example_points_selector = st.selectbox(
-    'Do you want to provide example resume points to model your resume on?',
-    ('No', 'Yes')
-)
+col1, col2 = st.columns(2)
+
+with col1:
+    example_points_selector = st.selectbox(
+        'Do you want to provide example resume points?',
+        ('No', 'Yes')
+    )
+
+with col2:
+    bullet_points_n = st.number_input(
+        label='How many bullets points do you want?',
+        min_value=1,
+        max_value=8,
+        value=3
+    )
 
 if example_points_selector == 'Yes':
     example_points = st.text_area(label='Example resume points')
 
 exp_description = st.text_area(label='Experience description', placeholder='Description of experience to resumize ')
 
-if exp_description:
+run_button = st.button(label='Generate resume points!')
+
+if run_button:
     if example_points_selector == 'No':
         few_shot_examples = f'''- Automated video review: ~$2M annual cost savings from deprecating manual safety review; Productionized a model that automatically hides videos with high content risk based on machine learning signals, leading a cross-functional team across product, engineering, and operations
         - Idea pin (new content format) safety: met OKR by reducing unsafe content on Pinterest by 10x; Conducted metric investigations and model performance analyses as the official metrics owner of idea pin safety, sizing opportunities and problems as well as fixing critical bugs
@@ -57,7 +67,10 @@ if exp_description:
     if example_points_selector == 'Yes':
         few_shot_examples = example_points
 
-    prompt = prompt_template.format(exp_description=exp_description, few_shot_examples=few_shot_examples)
+    prompt = prompt_template.format(
+        exp_description=exp_description,
+        bullet_points_n=bullet_points_n,
+        few_shot_examples=few_shot_examples)
     resume_points = call_llm(prompt)
 
     st.markdown('#### Your resume bullet points')
